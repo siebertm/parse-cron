@@ -159,7 +159,8 @@ class CronParser
     nudge_year(t, dir) if next_value.nil?
 
     # we changed the month, so its likely that the date is incorrect now
-    t.day = interpolate_weekdays(t.year, t.month)[1].last if dir == :last
+    valid_days = interpolate_weekdays(t.year, t.month)[1]
+    t.day = dir == :next ? valid_days.first : valid_days.last
   end
 
   def date_valid?(t, dir = :next)
