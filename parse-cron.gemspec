@@ -8,7 +8,7 @@ Gem::Specification.new do |s|
   s.platform    = Gem::Platform::RUBY
   s.authors     = ["Michael Siebert"]
   s.email       = ["siebertm85@googlemail.com"]
-  s.homepage    = ""
+  s.homepage    = "https://github.com/siebertm/parse-cron"
   s.summary     = %q{Parses cron expressions and calculates the next occurence}
   s.description = %q{Parses cron expressions and calculates the next occurence}
 
