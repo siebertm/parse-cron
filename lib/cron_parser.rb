@@ -56,7 +56,7 @@ class CronParser
 
 
   # returns the next occurence after the given date
-  def next(now = Time.now)
+  def next(now = @time_source.now)
     t = InternalTime.new(now,@time_source)
 
     unless time_specs[:month][0].include?(t.month)
@@ -80,7 +80,7 @@ class CronParser
   end
 
   # returns the last occurence before the given date
-  def last(now = Time.now)
+  def last(now = @time_source.now)
     t = InternalTime.new(now,@time_source)
 
     unless time_specs[:month][0].include?(t.month)
