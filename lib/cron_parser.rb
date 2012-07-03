@@ -5,17 +5,20 @@ class CronParser
   # internal "mutable" time representation
   class InternalTime
     attr_accessor :year, :month, :day, :hour, :min
+    attr_accessor :time_source
 
-    def initialize(time)
+    def initialize(time,time_source = Time)
       @year = time.year
       @month = time.month
       @day = time.day
       @hour = time.hour
       @min = time.min
+
+      @time_source = time_source
     end
 
     def to_time
-      Time.local(@year, @month, @day, @hour, @min, 0)
+      time_source.local(@year, @month, @day, @hour, @min, 0)
     end
 
     def inspect
@@ -46,14 +49,15 @@ class CronParser
      "sat" => "6"
   }
 
-  def initialize(source)
+  def initialize(source,time_source = Time)
     @source = source
+    @time_source = time_source
   end
 
 
   # returns the next occurence after the given date
   def next(now = Time.now)
-    t = InternalTime.new(now)
+    t = InternalTime.new(now,@time_source)
 
     unless time_specs[:month][0].include?(t.month)
       nudge_month(t)
@@ -77,7 +81,7 @@ class CronParser
 
   # returns the last occurence before the given date
   def last(now = Time.now)
-    t = InternalTime.new(now)
+    t = InternalTime.new(now,@time_source)
 
     unless time_specs[:month][0].include?(t.month)
       nudge_month(t, :last)

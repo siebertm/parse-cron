@@ -81,3 +81,11 @@ describe "CronParser#last" do
     end
   end
 end
+
+describe "time source" do
+  it "should use an alternate specified time source" do
+    ExtendedTime = Class.new(Time)
+    ExtendedTime.should_receive(:local).once
+    CronParser.new("* * * * *",ExtendedTime).next
+  end
+end
