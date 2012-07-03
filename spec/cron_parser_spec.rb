@@ -41,6 +41,7 @@ describe "CronParser#next" do
     ["0 0 1 1 *",       "2010-04-15 10:15",  "2011-01-01 00:00"],
     ["0 0 * * 1",       "2011-08-01 00:00",  "2011-08-08 00:00"],
     ["0 0 * * 1",       "2011-07-25 00:00",  "2011-08-01 00:00"],
+    ["45 23 7 3 *",     "2011-01-01 00:00",  "2011-03-07 23:45"],
   ].each do |line, now, expected_next|
     it "should return #{expected_next} for '#{line}' when now is #{now}" do
       now = parse_date(now)

@@ -60,7 +60,7 @@ class CronParser
       t.day = 0
     end
 
-    unless t.day == 0 || interpolate_weekdays(t.year, t.month)[0].include?(t.day)
+    unless interpolate_weekdays(t.year, t.month)[0].include?(t.day)
       nudge_date(t)
       t.hour = -1
     end
