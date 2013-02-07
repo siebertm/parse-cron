@@ -53,6 +53,7 @@ class CronParser
   def initialize(source,time_source = Time)
     @source = source
     @time_source = time_source
+    validate_source
   end
 
 
@@ -235,6 +236,16 @@ class CronParser
       allowed.sort.find { |val| val > current }
     else
       allowed.sort.reverse.find { |val| val < current }
+    end
+  end
+
+  def validate_source
+    unless @source.respond_to?(:split)
+      raise ArgumentError, 'not a valid cronline'
+    end
+    source_length = @source.split(/\s+/).length
+    unless source_length >= 5 && source_length <= 6
+      raise ArgumentError, 'not a valid cronline'
     end
   end
 end

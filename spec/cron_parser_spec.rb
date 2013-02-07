@@ -18,7 +18,7 @@ describe "CronParser#parse_element" do
     ["10-40/10", 0..60, [10, 20, 30, 40]],
   ].each do |element, range, expected|
     it "should return #{expected} for '#{element}' when range is #{range}" do
-      parser = CronParser.new('')
+      parser = CronParser.new('* * * * *')
       parser.parse_element(element, range) == expected
     end
   end
@@ -79,6 +79,16 @@ describe "CronParser#last" do
 
       parser.last(now).should == expected_next
     end
+  end
+end
+
+describe "CronParser#new" do
+  it 'should not raise error when given a valid cronline' do
+    expect { CronParser.new('30 * * * *') }.not_to raise_error
+  end
+
+  it 'should raise error when given an invalid cronline' do
+    expect { CronParser.new('* * * *') }.to raise_error('not a valid cronline')
   end
 end
 
