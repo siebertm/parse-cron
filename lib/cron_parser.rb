@@ -115,9 +115,9 @@ class CronParser
       else
         if SUBELEMENT_REGEX === subel
           if $5 # with range
-            stepped_range($1.to_i..($3.to_i + 1), $5.to_i)
+            stepped_range($1.to_i..$3.to_i, $5.to_i)
           elsif $3 # range without step
-            stepped_range($1.to_i..($3.to_i + 1), 1)
+            stepped_range($1.to_i..$3.to_i, 1)
           else # just a numeric
             [$1.to_i]
           end
