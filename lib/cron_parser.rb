@@ -1,4 +1,5 @@
 require 'set'
+require 'date'
 #
 # Parses cron expressions and computes the next occurence of the "job"
 #
