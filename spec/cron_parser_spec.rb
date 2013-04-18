@@ -1,7 +1,7 @@
 require "time"
 require "./spec/spec_helper"
 require "cron_parser"
-require "time"
+require "date"
 
 def parse_date(str)
   dt = DateTime.strptime(str, "%Y-%m-%d %H:%M")
