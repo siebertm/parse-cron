@@ -19,7 +19,7 @@ describe "CronParser#parse_element" do
   ].each do |element, range, expected|
     it "should return #{expected} for '#{element}' when range is #{range}" do
       parser = CronParser.new('* * * * *')
-      parser.parse_element(element, range).first.to_a.should == expected
+      parser.parse_element(element, range).first.to_a.sort.should == expected.sort
     end
   end
 end
