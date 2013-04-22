@@ -10,16 +10,16 @@ end
 
 describe "CronParser#parse_element" do
   [
-    ["*", 0..60, (0..60).to_a],
-    ["*/10", 0..60, [0, 10, 20, 30, 40, 50]],
-    ["10", 0..60, [10]],
-    ["10,30", 0..60, [10, 30]],
-    ["10-15", 0..60, [10, 11, 12, 13, 14, 15]],
-    ["10-40/10", 0..60, [10, 20, 30, 40]],
+    ["*", 0..59, (0..59).to_a],
+    ["*/10", 0..59, [0, 10, 20, 30, 40, 50]],
+    ["10", 0..59, [10]],
+    ["10,30", 0..59, [10, 30]],
+    ["10-15", 0..59, [10, 11, 12, 13, 14, 15]],
+    ["10-40/10", 0..59, [10, 20, 30, 40]],
   ].each do |element, range, expected|
     it "should return #{expected} for '#{element}' when range is #{range}" do
       parser = CronParser.new('* * * * *')
-      parser.parse_element(element, range) == expected
+      parser.parse_element(element, range).first.to_a.should == expected
     end
   end
 end
