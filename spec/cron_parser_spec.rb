@@ -42,6 +42,8 @@ describe "CronParser#next" do
     ["0 0 * * 1",       "2011-08-01 00:00",  "2011-08-08 00:00"],
     ["0 0 * * 1",       "2011-07-25 00:00",  "2011-08-01 00:00"],
     ["45 23 7 3 *",     "2011-01-01 00:00",  "2011-03-07 23:45"],
+    ["0 0 1 jun *",     "2013-05-14 11:20",  "2013-06-01 00:00"],
+    ["0 0 1 may,jul *", "2013-05-14 15:00",  "2013-07-01 00:00"],
   ].each do |line, now, expected_next|
     it "should return #{expected_next} for '#{line}' when now is #{now}" do
       now = parse_date(now)
@@ -70,6 +72,8 @@ describe "CronParser#last" do
     ["* * 12 * *",      "2010-04-15 10:15",  "2010-04-12 23:59"],
     ["* * * * 1,3",     "2010-04-15 10:15",  "2010-04-14 23:59"],
     ["0 0 1 1 *",       "2010-04-15 10:15",  "2010-01-01 00:00"],
+    ["0 0 1 jun *",     "2013-05-14 11:20",  "2012-06-01 00:00"],
+    ["0 0 1 may,jul *", "2013-05-14 15:00",  "2013-05-01 00:00"],
   ].each do |line, now, expected_next|
     it "should return #{expected_next} for '#{line}' when now is #{now}" do
       now = parse_date(now)
