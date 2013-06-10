@@ -213,7 +213,7 @@ class CronParser
   end
 
   def substitute_parse_symbols(str)
-    SYMBOLS.inject(str) do |s, (symbol, replacement)|
+    SYMBOLS.inject(str.downcase) do |s, (symbol, replacement)|
       s.gsub(symbol, replacement)
     end
   end
