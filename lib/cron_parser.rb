@@ -142,7 +142,7 @@ class CronParser
             [$1.to_i]
           end
         else
-          raise "Bad Vixie-style specification #{subel}"
+          raise ArgumentError, "Bad Vixie-style specification #{subel}"
         end
       end
     end.flatten.sort
