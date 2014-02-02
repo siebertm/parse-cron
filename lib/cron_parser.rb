@@ -52,9 +52,28 @@ class CronParser
   }
 
   def initialize(source,time_source = Time)
-    @source = source
+    @source = interpret_vixieisms(source)
     @time_source = time_source
     validate_source
+  end
+  
+  def interpret_vixieisms(spec)
+    case spec
+    when '@reboot'
+      raise ArgumentError, "Can't predict last/next run of @reboot"
+    when '@yearly', '@annually'
+      '0 0 1 1 *'
+    when '@monthly'
+      '0 0 1 * *'
+    when '@weekly'
+      '0 0 * * 0'
+    when '@daily', '@midnight'
+      '0 0 * * *'
+    when '@hourly'
+      '0 * * * *'
+    else
+      spec
+    end
   end
 
 
