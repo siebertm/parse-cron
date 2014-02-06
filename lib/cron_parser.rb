@@ -52,15 +52,34 @@ class CronParser
   }
 
   def initialize(source,time_source = Time)
-    @source = source
+    @source = interpret_vixieisms(source)
     @time_source = time_source
     validate_source
+  end
+  
+  def interpret_vixieisms(spec)
+    case spec
+    when '@reboot'
+      raise ArgumentError, "Can't predict last/next run of @reboot"
+    when '@yearly', '@annually'
+      '0 0 1 1 *'
+    when '@monthly'
+      '0 0 1 * *'
+    when '@weekly'
+      '0 0 * * 0'
+    when '@daily', '@midnight'
+      '0 0 * * *'
+    when '@hourly'
+      '0 * * * *'
+    else
+      spec
+    end
   end
 
 
   # returns the next occurence after the given date
   def next(now = @time_source.now)
-    t = InternalTime.new(now,@time_source)
+    t = InternalTime.new(now, @time_source)
 
     unless time_specs[:month][0].include?(t.month)
       nudge_month(t)
@@ -123,18 +142,18 @@ class CronParser
             [$1.to_i]
           end
         else
-          raise "Bad Vixie-style specification #{subel}"
+          raise ArgumentError, "Bad Vixie-style specification #{subel}"
         end
       end
     end.flatten.sort
 
-    [Set.new(values), values]
+    [Set.new(values), values, elem]
   end
 
 
   protected
 
-  # returns a list of days which do both match time_spec[:dom] and time_spec[:dow]
+  # returns a list of days which do both match time_spec[:dom] or time_spec[:dow]
   def interpolate_weekdays(year, month)
     @_interpolate_weekdays_cache ||= {}
     @_interpolate_weekdays_cache["#{year}-#{month}"] ||= interpolate_weekdays_without_cache(year, month)
@@ -142,12 +161,21 @@ class CronParser
 
   def interpolate_weekdays_without_cache(year, month)
     t = Date.new(year, month, 1)
-    valid_mday = time_specs[:dom][0]
-    valid_wday = time_specs[:dow][0]
+    valid_mday, _, mday_field = time_specs[:dom]
+    valid_wday, _, wday_field = time_specs[:dow]
+    
+    # Careful, if both DOW and DOM fields are non-wildcard,
+    # then we only need to match *one* for cron to run the job:
+    if not (mday_field == '*' and wday_field == '*')
+      valid_mday = [] if mday_field == '*'
+      valid_wday = [] if wday_field == '*'
+    end
+    # Careful: crontabs may use either 0 or 7 for Sunday:
+    valid_wday << 0 if valid_wday.include?(7)
 
     result = []
     while t.month == month
-      result << t.mday if valid_mday.include?(t.mday) && valid_wday.include?(t.wday)
+      result << t.mday if valid_mday.include?(t.mday) || valid_wday.include?(t.wday)
       t = t.succ
     end
 
