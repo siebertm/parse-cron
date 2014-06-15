@@ -79,7 +79,7 @@ describe "CronParser#next" do
     ["15-59/15 * * * *",      "2014-02-01 15:46",  "2014-02-01 16:15",3],
     ["15-59/15 * * * *",      "2014-02-01 15:46",  "2014-02-01 16:15",2],
   ].each do |line, now, expected_next,num=1|
-    it "return #{expected_next} for '#{line}' when now is #{now}" do
+    it "returns #{expected_next} for '#{line}' when now is #{now}" do
       parsed_now = parse_date(now)
       expected = parse_date(expected_next)
       parser = CronParser.new(line)
