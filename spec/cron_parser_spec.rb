@@ -75,16 +75,33 @@ describe "CronParser#next" do
     ["15-59/15 * * * *",      "2014-02-01 15:16",  "2014-02-01 15:30"],
     ["15-59/15 * * * *",      "2014-02-01 15:26",  "2014-02-01 15:30"],
     ["15-59/15 * * * *",      "2014-02-01 15:36",  "2014-02-01 15:45"],
-    ["15-59/15 * * * *",      "2014-02-01 15:45",  "2014-02-01 16:15"],
-    ["15-59/15 * * * *",      "2014-02-01 15:46",  "2014-02-01 16:15"],
-  ].each do |line, now, expected_next|
-    it "should return #{expected_next} for '#{line}' when now is #{now}" do
-      now = parse_date(now)
-      expected_next = parse_date(expected_next)
-
+    ["15-59/15 * * * *",      "2014-02-01 15:45",  "2014-02-01 16:15",4],
+    ["15-59/15 * * * *",      "2014-02-01 15:46",  "2014-02-01 16:15",3],
+    ["15-59/15 * * * *",      "2014-02-01 15:46",  "2014-02-01 16:15",2],
+  ].each do |line, now, expected_next,num=1|
+    it "return #{expected_next} for '#{line}' when now is #{now}" do
+      parsed_now = parse_date(now)
+      expected = parse_date(expected_next)
       parser = CronParser.new(line)
-
-      parser.next(now).xmlschema.should == expected_next.xmlschema
+      parser.next(parsed_now).xmlschema.should == expected.xmlschema
+    end
+    it "returns the expected class" do
+      parsed_now = parse_date(now)
+      expected = parse_date(expected_next)
+      parser = CronParser.new(line)
+      result = parser.next(parsed_now,num)
+      result.class.to_s.should == (num > 1 ? 'Array' : 'Time')
+    end
+    it "returns the expected count" do
+      parsed_now = parse_date(now)
+      expected = parse_date(expected_next)
+      parser = CronParser.new(line)
+      result = parser.next(parsed_now,num)
+      if result.class.to_s == 'Array'
+        result.size.should == num
+      else
+        result.class.to_s.should == 'Time'
+      end
     end
   end
 end

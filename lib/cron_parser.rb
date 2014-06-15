@@ -1,6 +1,6 @@
 require 'set'
 require 'date'
-#
+
 # Parses cron expressions and computes the next occurence of the "job"
 #
 class CronParser
@@ -56,7 +56,7 @@ class CronParser
     @time_source = time_source
     validate_source
   end
-  
+
   def interpret_vixieisms(spec)
     case spec
     when '@reboot'
@@ -78,7 +78,7 @@ class CronParser
 
 
   # returns the next occurence after the given date
-  def next(now = @time_source.now)
+  def next(now = @time_source.now, num = 1)
     t = InternalTime.new(now, @time_source)
 
     unless time_specs[:month][0].include?(t.month)
@@ -98,11 +98,16 @@ class CronParser
 
     # always nudge the minute
     nudge_minute(t)
-    t.to_time
+    t = t.to_time
+    if num > 1
+      recursive_calculate(:next,t,num)
+    else
+      t
+    end
   end
 
   # returns the last occurence before the given date
-  def last(now = @time_source.now)
+  def last(now = @time_source.now, num=1)
     t = InternalTime.new(now,@time_source)
 
     unless time_specs[:month][0].include?(t.month)
@@ -123,6 +128,12 @@ class CronParser
     # always nudge the minute
     nudge_minute(t, :last)
     t.to_time
+    t = t.to_time
+    if num > 1
+      recursive_calculate(:last,t,num)
+    else
+      t
+    end
   end
 
 
@@ -153,6 +164,14 @@ class CronParser
 
   protected
 
+  def recursive_calculate(meth,time,num)
+    array = [time]
+    num.-(1).times do |num|
+      array << self.send(meth, array.last)
+    end
+    array
+  end
+
   # returns a list of days which do both match time_spec[:dom] or time_spec[:dow]
   def interpolate_weekdays(year, month)
     @_interpolate_weekdays_cache ||= {}
@@ -163,7 +182,7 @@ class CronParser
     t = Date.new(year, month, 1)
     valid_mday, _, mday_field = time_specs[:dom]
     valid_wday, _, wday_field = time_specs[:dow]
-    
+
     # Careful, if both DOW and DOM fields are non-wildcard,
     # then we only need to match *one* for cron to run the job:
     if not (mday_field == '*' and wday_field == '*')
