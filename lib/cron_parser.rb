@@ -127,7 +127,6 @@ class CronParser
 
     # always nudge the minute
     nudge_minute(t, :last)
-    t.to_time
     t = t.to_time
     if num > 1
       recursive_calculate(:last,t,num)
