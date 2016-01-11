@@ -157,6 +157,7 @@ describe "CronParser#last" do
     ["15-59/15 * * * *",      "2014-02-01 15:36",  "2014-02-01 15:30"],
     ["15-59/15 * * * *",      "2014-02-01 15:45",  "2014-02-01 15:30"],
     ["15-59/15 * * * *",      "2014-02-01 15:46",  "2014-02-01 15:45"],
+    ["15/15 * * * *",         "2014-02-01 15:46",  "2014-02-01 15:45"]
   ].each do |line, now, expected_next|
     it "should return #{expected_next} for '#{line}' when now is #{now}" do
       now = parse_date(now)
