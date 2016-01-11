@@ -136,7 +136,7 @@ class CronParser
   end
 
 
-  SUBELEMENT_REGEX = %r{^(\d+)(-(\d+)(/(\d+))?)?$}
+  SUBELEMENT_REGEX = %r{^(\d+)((-(\d+))?(/(\d+))?)?$}
   def parse_element(elem, allowed_range)
     values = elem.split(',').map do |subel|
       if subel =~ /^\*/
@@ -144,10 +144,12 @@ class CronParser
         stepped_range(allowed_range, step)
       else
         if SUBELEMENT_REGEX === subel
-          if $5 # with range
-            stepped_range($1.to_i..$3.to_i, $5.to_i)
-          elsif $3 # range without step
-            stepped_range($1.to_i..$3.to_i, 1)
+          if $6 && $4 # range with step
+            stepped_range($1.to_i..$4.to_i, $6.to_i)
+          elsif $6 && !$4 # step without range
+            stepped_range($1.to_i..allowed_range.end, $6.to_i)
+          elsif $4 # range without step
+            stepped_range($1.to_i..$4.to_i, 1)
           else # just a numeric
             [$1.to_i]
           end
