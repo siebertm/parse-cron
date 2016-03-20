@@ -105,19 +105,6 @@ describe "Normal matching" do
         end
       end
     end
-
-    describe "without strict matching" do
-      it "returns any friday OR 13th" do
-        upcoming = CronParser.new("0 1 13 * 5").next(Time.now, 10)
-        upcoming.all?{|t| t.mday == 13 || t.wday == 5}.should be true
-      end
-    end
-    describe "with strict matching" do
-      it "returns only friday the 13th" do
-        upcoming = CronParser.new("0 1 13 * 5", Time, true).next(Time.now, 10)
-        upcoming.all?{|t| t.mday == 13 && t.wday == 5}.should be true
-      end
-    end
   end
 
   describe "CronParser#last" do
