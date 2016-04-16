@@ -15,7 +15,6 @@ class CronParser
       @day = time.day
       @hour = time.hour
       @min = time.min
-
       @time_source = time_source
     end
 
@@ -51,8 +50,9 @@ class CronParser
      "sat" => "6"
   }
 
-  def initialize(source,time_source = Time)
+  def initialize(source,time_source = Time, strict_match = false)
     @source = interpret_vixieisms(source)
+    set_strict_match(strict_match)
     @time_source = time_source
     validate_source
   end
@@ -80,7 +80,6 @@ class CronParser
   # returns the next occurence after the given date
   def next(now = @time_source.now, num = 1)
     t = InternalTime.new(now, @time_source)
-
     unless time_specs[:month][0].include?(t.month)
       nudge_month(t)
       t.day = 0
@@ -91,7 +90,7 @@ class CronParser
       t.hour = -1
     end
 
-    unless time_specs[:hour][0].include?(t.hour)
+   unless time_specs[:hour][0].include?(t.hour)
       nudge_hour(t)
       t.min = -1
     end
@@ -184,19 +183,24 @@ class CronParser
 
     # Careful, if both DOW and DOM fields are non-wildcard,
     # then we only need to match *one* for cron to run the job:
-    if not (mday_field == '*' and wday_field == '*')
-      valid_mday = [] if mday_field == '*'
-      valid_wday = [] if wday_field == '*'
+    unless strict_match?
+      unless (mday_field == '*' and wday_field == '*')
+        valid_mday = [] if mday_field == '*'
+        valid_wday = [] if wday_field == '*'
+      end
     end
     # Careful: crontabs may use either 0 or 7 for Sunday:
     valid_wday << 0 if valid_wday.include?(7)
 
     result = []
     while t.month == month
-      result << t.mday if valid_mday.include?(t.mday) || valid_wday.include?(t.wday)
+      if strict_match?
+        result << t.mday if (valid_mday.include?(t.mday) && valid_wday.include?(t.wday))
+      else
+        result << t.mday if (valid_mday.include?(t.mday) || valid_wday.include?(t.wday))
+      end
       t = t.succ
     end
-
     [Set.new(result), result]
   end
 
@@ -208,23 +212,32 @@ class CronParser
     spec = time_specs[:month][1]
     next_value = find_best_next(t.month, spec, dir)
     t.month = next_value || (dir == :next ? spec.first : spec.last)
+    if strict_match?
+      until date_valid?(t)
+        next_value = find_best_next(t.month, spec, dir)
+        t.month = next_value || (dir == :next ? spec.first : spec.last)
+        nudge_year(t, dir) if next_value.nil?
+        valid_days = interpolate_weekdays(t.year, t.month)[1]
+        t.day = dir == :next ? valid_days.first : valid_days.last
+      end
+    else
+      nudge_year(t, dir) if next_value.nil?
+      # we changed the month, so its likely that the date is incorrect now
+      valid_days = interpolate_weekdays(t.year, t.month)[1]
+      t.day = dir == :next ? valid_days.first : valid_days.last
+    end
 
-    nudge_year(t, dir) if next_value.nil?
-
-    # we changed the month, so its likely that the date is incorrect now
-    valid_days = interpolate_weekdays(t.year, t.month)[1]
-    t.day = dir == :next ? valid_days.first : valid_days.last
   end
 
   def date_valid?(t, dir = :next)
-    interpolate_weekdays(t.year, t.month)[0].include?(t.day)
+    weekdays = interpolate_weekdays(t.year, t.month)[0]
+    weekdays.include?(t.day)
   end
 
   def nudge_date(t, dir = :next, can_nudge_month = true)
     spec = interpolate_weekdays(t.year, t.month)[1]
     next_value = find_best_next(t.day, spec, dir)
     t.day = next_value || (dir == :next ? spec.first : spec.last)
-
     nudge_month(t, dir) if next_value.nil? && can_nudge_month
   end
 
@@ -232,7 +245,6 @@ class CronParser
     spec = time_specs[:hour][1]
     next_value = find_best_next(t.hour, spec, dir)
     t.hour = next_value || (dir == :next ? spec.first : spec.last)
-
     nudge_date(t, dir) if next_value.nil?
   end
 
@@ -240,7 +252,6 @@ class CronParser
     spec = time_specs[:minute][1]
     next_value = find_best_next(t.min, spec, dir)
     t.min = next_value || (dir == :next ? spec.first : spec.last)
-
     nudge_hour(t, dir) if next_value.nil?
   end
 
@@ -267,10 +278,8 @@ class CronParser
 
   def stepped_range(rng, step = 1)
     len = rng.last - rng.first
-
     num = len.div(step)
     result = (0..num).map { |i| rng.first + step * i }
-
     result.pop if result[-1] == rng.last and rng.exclude_end?
     result
   end
@@ -295,4 +304,16 @@ class CronParser
       raise ArgumentError, 'not a valid cronline'
     end
   end
+
+  def strict_match?
+    @strict_match
+  end
+
+  def set_strict_match(strict_match = false)
+    @strict_match = false
+    if strict_match && [time_specs[:dom].last, time_specs[:dow].last].all?{|v| v != '*'}
+      @strict_match = true
+    end
+  end
+
 end
