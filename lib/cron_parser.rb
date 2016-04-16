@@ -80,17 +80,17 @@ class CronParser
   # returns the next occurence after the given date
   def next(now = @time_source.now, num = 1)
     t = InternalTime.new(now, @time_source)
-    if !time_specs[:month][0].include?(t.month)
+    unless time_specs[:month][0].include?(t.month)
       nudge_month(t)
       t.day = 0
     end
 
-    if !interpolate_weekdays(t.year, t.month)[0].include?(t.day)
+    unless interpolate_weekdays(t.year, t.month)[0].include?(t.day)
       nudge_date(t)
       t.hour = -1
     end
-    
-   if !time_specs[:hour][0].include?(t.hour)
+
+   unless time_specs[:hour][0].include?(t.hour)
       nudge_hour(t)
       t.min = -1
     end
@@ -183,8 +183,8 @@ class CronParser
 
     # Careful, if both DOW and DOM fields are non-wildcard,
     # then we only need to match *one* for cron to run the job:
-    if !strict_match?
-      if not (mday_field == '*' and wday_field == '*') 
+    unless strict_match?
+      unless (mday_field == '*' and wday_field == '*')
         valid_mday = [] if mday_field == '*'
         valid_wday = [] if wday_field == '*'
       end
@@ -226,7 +226,7 @@ class CronParser
       valid_days = interpolate_weekdays(t.year, t.month)[1]
       t.day = dir == :next ? valid_days.first : valid_days.last
     end
-    
+
   end
 
   def date_valid?(t, dir = :next)
