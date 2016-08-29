@@ -136,28 +136,40 @@ class CronParser
   end
 
 
-  SUBELEMENT_REGEX = %r{^(\d+)(-(\d+)(/(\d+))?)?$}
+  SUBELEMENT_REGEX = %r{^(\d+)(-(\d+)(/(\d+))?)?(#(\d+))?$}
   def parse_element(elem, allowed_range)
+    extensions = Hash.new([])
+
     values = elem.split(',').map do |subel|
-      if subel =~ /^\*/
-        step = subel.length > 1 ? subel[2..-1].to_i : 1
-        stepped_range(allowed_range, step)
-      else
-        if SUBELEMENT_REGEX === subel
-          if $5 # with range
-            stepped_range($1.to_i..$3.to_i, $5.to_i)
-          elsif $3 # range without step
-            stepped_range($1.to_i..$3.to_i, 1)
-          else # just a numeric
-            [$1.to_i]
-          end
+      sub_values =
+        if subel =~ /^\*/
+          ext = '*'
+          step = subel.length > 1 ? subel[2..-1].to_i : 1
+          stepped_range(allowed_range, step)
         else
-          raise ArgumentError, "Bad Vixie-style specification #{subel}"
+          if SUBELEMENT_REGEX === subel
+            ext = $7.to_i if $7
+
+            if $5 # with range
+              stepped_range($1.to_i..$3.to_i, $5.to_i)
+            elsif $3 # range without step
+              stepped_range($1.to_i..$3.to_i, 1)
+            else # just a numeric
+              [$1.to_i]
+            end
+          else
+            raise ArgumentError, "Bad Vixie-style specification #{subel}"
+          end
         end
+
+      if ext
+        sub_values.each { |v| extensions[v].push(ext) }
       end
+
+      sub_values
     end.flatten.sort
 
-    [Set.new(values), values, elem]
+    [Set.new(values), values, elem, extensions]
   end
 
 
@@ -180,7 +192,7 @@ class CronParser
   def interpolate_weekdays_without_cache(year, month)
     t = Date.new(year, month, 1)
     valid_mday, _, mday_field = time_specs[:dom]
-    valid_wday, _, wday_field = time_specs[:dow]
+    valid_wday, _, wday_field, extensions = time_specs[:dow]
 
     # Careful, if both DOW and DOM fields are non-wildcard,
     # then we only need to match *one* for cron to run the job:
@@ -192,8 +204,16 @@ class CronParser
     valid_wday << 0 if valid_wday.include?(7)
 
     result = []
+    wday_count = 0
     while t.month == month
-      result << t.mday if valid_mday.include?(t.mday) || valid_wday.include?(t.wday)
+      ext = extensions[t.wday]
+      if valid_wday.include?(t.wday)
+          wday_count += 1
+          result << t.mday if ext.empty? || ext.include?('*') || ext.include?(wday_count)
+      end
+
+      result << t.mday if valid_mday.include?(t.mday)
+
       t = t.succ
     end
 
