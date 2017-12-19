@@ -8,6 +8,11 @@ def parse_date(str)
   Time.local(dt.year, dt.month, dt.day, dt.hour, dt.min, 0)
 end
 
+def parse_date_with_tz(str)
+  dt = DateTime.strptime(str, "%Y-%m-%d %H:%M %z")
+  Time.new(dt.year, dt.month, dt.day, dt.hour, dt.min, 0, dt.zone)
+end
+
 describe "CronParser#parse_element" do
   [
     ["*", 0..59, (0..59).to_a],
@@ -166,6 +171,25 @@ describe "CronParser#last" do
 
       parser.last(now).should == expected_next
     end
+  end
+end
+
+describe "With timezone" do
+  describe "#time_spec" do
+    it "returns the correct breakdown" do
+      parser = CronParser.new('0 17 * * * -08:00')
+      expect(parser.send(:time_specs)[:offset]).to eq("-08:00")
+    end
+  end
+
+  it "Should return in the specified timezone with the correct computed day" do
+    now = parse_date_with_tz('2017-12-14 17:15 -08:00')
+    expected_last = parse_date_with_tz('2017-12-14 17:00 -08:00')
+    expected_next = parse_date_with_tz('2017-12-15 17:00 -08:00')
+
+    parser = CronParser.new('0 17 * * * -08:00')
+    parser.next(now).should == expected_next
+    parser.last(now).should == expected_last
   end
 end
 

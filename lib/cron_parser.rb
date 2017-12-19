@@ -7,9 +7,9 @@ class CronParser
   # internal "mutable" time representation
   class InternalTime
     attr_accessor :year, :month, :day, :hour, :min
-    attr_accessor :time_source
+    attr_accessor :time_source, :offset
 
-    def initialize(time,time_source = Time)
+    def initialize(time, time_source = Time)
       @year = time.year
       @month = time.month
       @day = time.day
@@ -20,7 +20,11 @@ class CronParser
     end
 
     def to_time
-      time_source.local(@year, @month, @day, @hour, @min, 0)
+      if @offset
+        time_source.new(@year, @month, @day, @hour, @min, 0, @offset)
+      else
+        time_source.local(@year, @month, @day, @hour, @min, 0)
+      end
     end
 
     def inspect
@@ -50,10 +54,11 @@ class CronParser
      "fri" => "5",
      "sat" => "6"
   }
-
-  def initialize(source,time_source = Time)
+  attr_accessor :offset
+  def initialize(source,time_source = Time, offset = nil)
     @source = interpret_vixieisms(source)
     @time_source = time_source
+    @offset = offset
     validate_source
   end
 
@@ -80,6 +85,7 @@ class CronParser
   # returns the next occurence after the given date
   def next(now = @time_source.now, num = 1)
     t = InternalTime.new(now, @time_source)
+    t.offset = time_specs[:offset]
 
     unless time_specs[:month][0].include?(t.month)
       nudge_month(t)
@@ -109,6 +115,7 @@ class CronParser
   # returns the last occurence before the given date
   def last(now = @time_source.now, num=1)
     t = InternalTime.new(now,@time_source)
+    t.offset = time_specs[:offset]
 
     unless time_specs[:month][0].include?(t.month)
       nudge_month(t, :last)
@@ -253,7 +260,8 @@ class CronParser
         :hour   => parse_element(tokens[1], 0..23), #hour
         :dom    => parse_element(tokens[2], 1..31), #DOM
         :month  => parse_element(tokens[3], 1..12), #mon
-        :dow    => parse_element(tokens[4], 0..6)  #DOW
+        :dow    => parse_element(tokens[4], 0..6),  #DOW
+        :offset => (tokens.length == 6) ? tokens[5] : nil,  #timezone offset
       }
     end
   end

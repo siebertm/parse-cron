@@ -14,5 +14,10 @@ next_time = cron_parser.next(Time.now)
 
 # Last occurrence
 most_recent_time = cron_parser.last(Time.now)
+
+# With Timezone
+
+cron_parser = CronParser.new('30 * * * * +08:00')
+
 ```
 
