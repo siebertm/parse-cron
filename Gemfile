@@ -4,4 +4,4 @@ source "http://rubygems.org"
 gemspec
 
 gem "ZenTest", "4.6.0"
-gem "rake", '~> 11.0'
+gem "rake"

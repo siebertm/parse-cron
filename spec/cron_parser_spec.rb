@@ -1,5 +1,4 @@
 require "time"
-require "./spec/spec_helper"
 require "cron_parser"
 require "date"
 
@@ -8,7 +7,7 @@ def parse_date(str)
   Time.local(dt.year, dt.month, dt.day, dt.hour, dt.min, 0)
 end
 
-describe "CronParser#parse_element" do
+RSpec.describe "CronParser#parse_element" do
   [
     ["*", 0..59, (0..59).to_a],
     ["*/10", 0..59, [0, 10, 20, 30, 40, 50]],
@@ -19,12 +18,12 @@ describe "CronParser#parse_element" do
   ].each do |element, range, expected|
     it "should return #{expected} for '#{element}' when range is #{range}" do
       parser = CronParser.new('* * * * *')
-      parser.parse_element(element, range).first.to_a.sort.should == expected.sort
+      expect(parser.parse_element(element, range).first).to match_array(expected)
     end
   end
 end
 
-describe "CronParser#next" do
+RSpec.describe "CronParser#next" do
   [
     ["* * * * *",             "2011-08-15 12:00",  "2011-08-15 12:01",1],
     ["* * * * *",             "2011-08-15 02:25",  "2011-08-15 02:26",1],
@@ -83,30 +82,30 @@ describe "CronParser#next" do
       parsed_now = parse_date(now)
       expected = parse_date(expected_next)
       parser = CronParser.new(line)
-      parser.next(parsed_now).xmlschema.should == expected.xmlschema
+      expect(parser.next(parsed_now).xmlschema).to eql(expected.xmlschema)
     end
     it "returns the expected class" do
       parsed_now = parse_date(now)
       expected = parse_date(expected_next)
       parser = CronParser.new(line)
       result = parser.next(parsed_now,num)
-      result.class.to_s.should == (num > 1 ? 'Array' : 'Time')
+      expect(result).to be_a(num > 1 ? Array : Time)
     end
     it "returns the expected count" do
       parsed_now = parse_date(now)
       expected = parse_date(expected_next)
       parser = CronParser.new(line)
       result = parser.next(parsed_now,num)
-      if result.class.to_s == 'Array'
-        result.size.should == num
+      if result.is_a?(Array)
+        expect(result.size).to eql(num)
       else
-        result.class.to_s.should == 'Time'
+        expect(result).to be_a(Time)
       end
     end
   end
 end
 
-describe "CronParser#last" do
+RSpec.describe "CronParser#last" do
   [
     ["* * * * *",             "2011-08-15 12:00",  "2011-08-15 11:59"],
     ["* * * * *",             "2011-08-15 02:25",  "2011-08-15 02:24"],
@@ -164,12 +163,12 @@ describe "CronParser#last" do
 
       parser = CronParser.new(line)
 
-      parser.last(now).should == expected_next
+      expect(parser.last(now)).to eql(expected_next)
     end
   end
 end
 
-describe "CronParser#new" do
+RSpec.describe "CronParser#new" do
   it 'should not raise error when given a valid cronline' do
     expect { CronParser.new('30 * * * *') }.not_to raise_error
   end
@@ -179,10 +178,10 @@ describe "CronParser#new" do
   end
 end
 
-describe "time source" do
+RSpec.describe "time source" do
   it "should use an alternate specified time source" do
     ExtendedTime = Class.new(Time)
-    ExtendedTime.should_receive(:local).once
+    expect(ExtendedTime).to receive(:local).once
     CronParser.new("* * * * *",ExtendedTime).next
   end
 end
