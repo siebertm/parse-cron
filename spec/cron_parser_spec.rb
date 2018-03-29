@@ -77,6 +77,10 @@ RSpec.describe "CronParser#next" do
     ["15-59/15 * * * *",      "2014-02-01 15:45",  "2014-02-01 16:15",4],
     ["15-59/15 * * * *",      "2014-02-01 15:46",  "2014-02-01 16:15",3],
     ["15-59/15 * * * *",      "2014-02-01 15:46",  "2014-02-01 16:15",2],
+    ["* * L 2 *",             "2015-02-01 15:36",  "2015-02-28 00:00",1],
+    ["* * L 2 *",             "2016-02-01 15:36",  "2016-02-29 00:00",1],
+    ["* * 15,L 2 *",          "2015-02-01 15:36",  "2015-02-15 00:00",1],
+    ["* * 15,L 2 *",          "2015-02-16 15:36",  "2015-02-28 00:00",1]
   ].each do |line, now, expected_next,num|
     it "returns #{expected_next} for '#{line}' when now is #{now}" do
       parsed_now = parse_date(now)
@@ -156,6 +160,10 @@ RSpec.describe "CronParser#last" do
     ["15-59/15 * * * *",      "2014-02-01 15:36",  "2014-02-01 15:30"],
     ["15-59/15 * * * *",      "2014-02-01 15:45",  "2014-02-01 15:30"],
     ["15-59/15 * * * *",      "2014-02-01 15:46",  "2014-02-01 15:45"],
+    ["* * L 2 *",             "2014-02-01 15:36",  "2013-02-28 23:59"],
+    ["* * L 2 *",             "2017-02-01 15:36",  "2016-02-29 23:59"],
+    ["* * 15,L 2 *",          "2015-02-01 15:36",  "2014-02-28 23:59"],
+    ["* * 15,L 2 *",          "2015-02-16 15:36",  "2015-02-15 23:59"]
   ].each do |line, now, expected_next|
     it "should return #{expected_next} for '#{line}' when now is #{now}" do
       now = parse_date(now)
@@ -175,6 +183,19 @@ RSpec.describe "CronParser#new" do
 
   it 'should raise error when given an invalid cronline' do
     expect { CronParser.new('* * * *') }.to raise_error('not a valid cronline')
+  end
+
+  it 'should not raise error when L is passed in DOM field' do
+    expect { CronParser.new('* * L * *').next }.not_to raise_error
+  end
+
+  (0..4).each do |n|
+    next if n == 2
+    it "should raise error when L is passed in #{n} field" do
+      spec = Array.new(5) { '*' }
+      spec[n] = 'L'
+      expect { CronParser.new(spec.join(' ')).next }.to raise_error("'L' specification is supported only for DOM field")
+    end
   end
 end
 
