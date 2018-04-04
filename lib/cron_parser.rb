@@ -136,14 +136,18 @@ class CronParser
   end
 
 
-  SUBELEMENT_REGEX = %r{^(\d+)(-(\d+)(/(\d+))?)?$}
-  def parse_element(elem, allowed_range)
+  SUBELEMENT_REGEX = %r{^(\d+|l)(-(\d+)(/(\d+))?)?$}
+  def parse_element(elem, allowed_range, field_name = nil)
     values = elem.split(',').map do |subel|
       if subel =~ /^\*/
         step = subel.length > 1 ? subel[2..-1].to_i : 1
         stepped_range(allowed_range, step)
       else
         if SUBELEMENT_REGEX === subel
+          if field_name != :dom && $1.include?('l')
+            raise ArgumentError, "'L' specification is supported only for DOM field"
+          end
+
           if $5 # with range
             stepped_range($1.to_i..$3.to_i, $5.to_i)
           elsif $3 # range without step
@@ -190,6 +194,9 @@ class CronParser
     end
     # Careful: crontabs may use either 0 or 7 for Sunday:
     valid_wday << 0 if valid_wday.include?(7)
+
+    # L is converted to 0
+    valid_mday << (t.next_month - 1).day if valid_mday.include?(0)
 
     result = []
     while t.month == month
@@ -251,7 +258,7 @@ class CronParser
       {
         :minute => parse_element(tokens[0], 0..59), #minute
         :hour   => parse_element(tokens[1], 0..23), #hour
-        :dom    => parse_element(tokens[2], 1..31), #DOM
+        :dom    => parse_element(tokens[2], 1..31, :dom), #DOM
         :month  => parse_element(tokens[3], 1..12), #mon
         :dow    => parse_element(tokens[4], 0..6)  #DOW
       }
