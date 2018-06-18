@@ -6,7 +6,7 @@ require 'date'
 class CronParser
   # internal "mutable" time representation
   class InternalTime
-    attr_accessor :year, :month, :day, :hour, :min
+    attr_accessor :year, :month, :day, :hour, :min, :sec
     attr_accessor :time_source
 
     def initialize(time,time_source = Time)
@@ -15,16 +15,17 @@ class CronParser
       @day = time.day
       @hour = time.hour
       @min = time.min
+      @sec = time.sec
 
       @time_source = time_source
     end
 
     def to_time
-      time_source.local(@year, @month, @day, @hour, @min, 0)
+      time_source.local(@year, @month, @day, @hour, @min, @sec)
     end
 
     def inspect
-      [year, month, day, hour, min].inspect
+      [year, month, day, hour, min, sec].inspect
     end
   end
 
@@ -81,6 +82,11 @@ class CronParser
   def next(now = @time_source.now, num = 1)
     t = InternalTime.new(now, @time_source)
 
+    unless time_specs[:year][0].include?(t.year)
+      nudge_year(t)
+      t.month = 0
+    end
+
     unless time_specs[:month][0].include?(t.month)
       nudge_month(t)
       t.day = 0
@@ -96,8 +102,13 @@ class CronParser
       t.min = -1
     end
 
-    # always nudge the minute
-    nudge_minute(t)
+    unless time_specs[:minute][0].include?(t.min)
+      nudge_minute(t)
+      t.sec = -1
+    end
+
+    # always nudge the second
+    nudge_second(t)
     t = t.to_time
     if num > 1
       recursive_calculate(:next,t,num)
@@ -109,6 +120,11 @@ class CronParser
   # returns the last occurence before the given date
   def last(now = @time_source.now, num=1)
     t = InternalTime.new(now,@time_source)
+
+    unless time_specs[:year][0].include?(t.year)
+      nudge_year(t, :last)
+      t.month = 13
+    end
 
     unless time_specs[:month][0].include?(t.month)
       nudge_month(t, :last)
@@ -125,8 +141,13 @@ class CronParser
       t.min = 60
     end
 
-    # always nudge the minute
-    nudge_minute(t, :last)
+    unless time_specs[:minute][0].include?(t.min)
+      nudge_minute(t, :last)
+      t.sec = 60
+    end
+
+    # always nudge the second
+    nudge_second(t, :last)
     t = t.to_time
     if num > 1
       recursive_calculate(:last,t,num)
@@ -201,7 +222,12 @@ class CronParser
   end
 
   def nudge_year(t, dir = :next)
-    t.year = t.year + (dir == :next ? 1 : -1)
+    spec = time_specs[:year][1]
+    next_value = find_best_next(t.year, spec, dir)
+    t.year = next_value || (dir == :next ? spec.first : spec.last)
+
+    # We've exhausted all years in the range
+    raise "No matching dates exist" if next_value.nil?
   end
 
   def nudge_month(t, dir = :next)
@@ -244,17 +270,40 @@ class CronParser
     nudge_hour(t, dir) if next_value.nil?
   end
 
+  def nudge_second(t, dir = :next)
+    spec = time_specs[:second][1]
+    next_value = find_best_next(t.sec, spec, dir)
+    t.sec = next_value || (dir == :next ? spec.first : spec.last)
+
+    nudge_minute(t, dir) if next_value.nil?
+  end
+
   def time_specs
     @time_specs ||= begin
-      # tokens now contains the 5 fields
       tokens = substitute_parse_symbols(@source).split(/\s+/)
-      {
-        :minute => parse_element(tokens[0], 0..59), #minute
-        :hour   => parse_element(tokens[1], 0..23), #hour
-        :dom    => parse_element(tokens[2], 1..31), #DOM
-        :month  => parse_element(tokens[3], 1..12), #mon
-        :dow    => parse_element(tokens[4], 0..6)  #DOW
-      }
+      # tokens now contains the 5 or 7 fields
+      
+      if tokens.count <= 6
+        {
+          :second => parse_element("0", 0..59),       #second
+          :minute => parse_element(tokens[0], 0..59), #minute
+          :hour   => parse_element(tokens[1], 0..23), #hour
+          :dom    => parse_element(tokens[2], 1..31), #DOM
+          :month  => parse_element(tokens[3], 1..12), #mon
+          :dow    => parse_element(tokens[4], 0..6),  #DOW
+          :year   => parse_element("*", 2000..2050)   #year
+        }
+      else
+        {
+          :second => parse_element(tokens[0], 0..59), #second
+          :minute => parse_element(tokens[1], 0..59), #minute
+          :hour   => parse_element(tokens[2], 0..23), #hour
+          :dom    => parse_element(tokens[3], 1..31), #DOM
+          :month  => parse_element(tokens[4], 1..12), #mon
+          :dow    => parse_element(tokens[5], 0..6),  #DOW
+          :year   => parse_element(tokens[6], 2000..2050)  #year
+        }
+      end
     end
   end
 
@@ -291,7 +340,7 @@ class CronParser
       raise ArgumentError, 'not a valid cronline'
     end
     source_length = @source.split(/\s+/).length
-    unless source_length >= 5 && source_length <= 6
+    unless (source_length >= 5 && source_length <= 6) || (source_length >= 7 && source_length <= 8)
       raise ArgumentError, 'not a valid cronline'
     end
   end
