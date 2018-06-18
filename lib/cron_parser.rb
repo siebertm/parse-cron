@@ -82,6 +82,11 @@ class CronParser
   def next(now = @time_source.now, num = 1)
     t = InternalTime.new(now, @time_source)
 
+    unless time_specs[:year][0].include?(t.year)
+      nudge_year(t)
+      t.month = 0
+    end
+
     unless time_specs[:month][0].include?(t.month)
       nudge_month(t)
       t.day = 0
@@ -97,8 +102,13 @@ class CronParser
       t.min = -1
     end
 
-    # always nudge the minute
-    nudge_minute(t)
+    unless time_specs[:minute][0].include?(t.min)
+      nudge_minute(t)
+      t.sec = -1
+    end
+
+    # always nudge the second
+    nudge_second(t)
     t = t.to_time
     if num > 1
       recursive_calculate(:next,t,num)
@@ -110,6 +120,11 @@ class CronParser
   # returns the last occurence before the given date
   def last(now = @time_source.now, num=1)
     t = InternalTime.new(now,@time_source)
+
+    unless time_specs[:year][0].include?(t.year)
+      nudge_year(t, :last)
+      t.month = 13
+    end
 
     unless time_specs[:month][0].include?(t.month)
       nudge_month(t, :last)
@@ -126,8 +141,13 @@ class CronParser
       t.min = 60
     end
 
-    # always nudge the minute
-    nudge_minute(t, :last)
+    unless time_specs[:minute][0].include?(t.min)
+      nudge_minute(t, :last)
+      t.sec = 60
+    end
+
+    # always nudge the second
+    nudge_second(t, :last)
     t = t.to_time
     if num > 1
       recursive_calculate(:last,t,num)
@@ -202,7 +222,12 @@ class CronParser
   end
 
   def nudge_year(t, dir = :next)
-    t.year = t.year + (dir == :next ? 1 : -1)
+    spec = time_specs[:year][1]
+    next_value = find_best_next(t.year, spec, dir)
+    t.year = next_value || (dir == :next ? spec.first : spec.last)
+
+    # We've exhausted all years in the range
+    raise "No matching dates exist" if next_value.nil?
   end
 
   def nudge_month(t, dir = :next)
@@ -243,6 +268,14 @@ class CronParser
     t.min = next_value || (dir == :next ? spec.first : spec.last)
 
     nudge_hour(t, dir) if next_value.nil?
+  end
+
+  def nudge_second(t, dir = :next)
+    spec = time_specs[:second][1]
+    next_value = find_best_next(t.sec, spec, dir)
+    t.sec = next_value || (dir == :next ? spec.first : spec.last)
+
+    nudge_minute(t, dir) if next_value.nil?
   end
 
   def time_specs
