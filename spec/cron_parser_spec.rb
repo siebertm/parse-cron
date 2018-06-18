@@ -19,7 +19,7 @@ describe "CronParser#parse_element" do
   ].each do |element, range, expected|
     it "should return #{expected} for '#{element}' when range is #{range}" do
       parser = CronParser.new('* * * * *')
-      parser.parse_element(element, range).first.to_a.sort.should == expected.sort
+      expect(parser.parse_element(element, range).first.to_a.sort).to eq expected.sort
     end
   end
 end
@@ -83,14 +83,14 @@ describe "CronParser#next" do
       parsed_now = parse_date(now)
       expected = parse_date(expected_next)
       parser = CronParser.new(line)
-      parser.next(parsed_now).xmlschema.should == expected.xmlschema
+      expect(parser.next(parsed_now).xmlschema).to eq expected.xmlschema
     end
     it "returns the expected class" do
       parsed_now = parse_date(now)
       expected = parse_date(expected_next)
       parser = CronParser.new(line)
       result = parser.next(parsed_now,num)
-      result.class.to_s.should == (num > 1 ? 'Array' : 'Time')
+      expect(result.class.to_s).to eq (num > 1 ? 'Array' : 'Time')
     end
     it "returns the expected count" do
       parsed_now = parse_date(now)
@@ -98,9 +98,9 @@ describe "CronParser#next" do
       parser = CronParser.new(line)
       result = parser.next(parsed_now,num)
       if result.class.to_s == 'Array'
-        result.size.should == num
+        expect(result.size).to eq num
       else
-        result.class.to_s.should == 'Time'
+        expect(result.class.to_s).to eq 'Time'
       end
     end
   end
@@ -164,7 +164,7 @@ describe "CronParser#last" do
 
       parser = CronParser.new(line)
 
-      parser.last(now).should == expected_next
+      expect(parser.last(now)).to eq expected_next
     end
   end
 end
@@ -182,7 +182,7 @@ end
 describe "time source" do
   it "should use an alternate specified time source" do
     ExtendedTime = Class.new(Time)
-    ExtendedTime.should_receive(:local).once
+    expect(ExtendedTime).to receive(:local).once
     CronParser.new("* * * * *",ExtendedTime).next
   end
 end
