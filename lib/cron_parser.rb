@@ -291,7 +291,7 @@ class CronParser
           :dom    => parse_element(tokens[2], 1..31), #DOM
           :month  => parse_element(tokens[3], 1..12), #mon
           :dow    => parse_element(tokens[4], 0..6),  #DOW
-          :year   => parse_element("*", 1900..3000)   #year
+          :year   => parse_element("*", 2000..2050)   #year
         }
       else
         {
@@ -301,7 +301,7 @@ class CronParser
           :dom    => parse_element(tokens[3], 1..31), #DOM
           :month  => parse_element(tokens[4], 1..12), #mon
           :dow    => parse_element(tokens[5], 0..6),  #DOW
-          :year   => parse_element(tokens[6], 1900..3000)  #year
+          :year   => parse_element(tokens[6], 2000..2050)  #year
         }
       end
     end
