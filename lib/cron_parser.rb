@@ -9,7 +9,7 @@ class CronParser
     attr_accessor :year, :month, :day, :hour, :min
     attr_accessor :time_source
 
-    def initialize(time = Time.now, time_source = Time)
+    def initialize(time = Time.current, time_source = Time)
       @year = time.year
       @month = time.month
       @day = time.day
