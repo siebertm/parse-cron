@@ -235,6 +235,7 @@ class CronParser
 
   def nudge_minute(t, dir = :next)
     spec = time_specs[:minute][1]
+    t.min = t.min + 1 unless dir == :next
     next_value = find_best_next(t.min, spec, dir)
     t.min = next_value || (dir == :next ? spec.first : spec.last)
 
