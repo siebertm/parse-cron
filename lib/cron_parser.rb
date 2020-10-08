@@ -9,7 +9,7 @@ class CronParser
     attr_accessor :year, :month, :day, :hour, :min
     attr_accessor :time_source
 
-    def initialize(time,time_source = Time)
+    def initialize(time, time_source = Time)
       @year = time.year
       @month = time.month
       @day = time.day
@@ -29,29 +29,29 @@ class CronParser
   end
 
   SYMBOLS = {
-     "jan" => "1",
-     "feb" => "2",
-     "mar" => "3",
-     "apr" => "4",
-     "may" => "5",
-     "jun" => "6",
-     "jul" => "7",
-     "aug" => "8",
-     "sep" => "9",
-     "oct" => "10",
-     "nov" => "11",
-     "dec" => "12",
+    "jan" => "1",
+    "feb" => "2",
+    "mar" => "3",
+    "apr" => "4",
+    "may" => "5",
+    "jun" => "6",
+    "jul" => "7",
+    "aug" => "8",
+    "sep" => "9",
+    "oct" => "10",
+    "nov" => "11",
+    "dec" => "12",
 
-     "sun" => "0",
-     "mon" => "1",
-     "tue" => "2",
-     "wed" => "3",
-     "thu" => "4",
-     "fri" => "5",
-     "sat" => "6"
+    "sun" => "0",
+    "mon" => "1",
+    "tue" => "2",
+    "wed" => "3",
+    "thu" => "4",
+    "fri" => "5",
+    "sat" => "6"
   }
 
-  def initialize(source,time_source = Time)
+  def initialize(source, time_source = Time)
     @source = interpret_vixieisms(source)
     @time_source = time_source
     validate_source
@@ -76,7 +76,6 @@ class CronParser
     end
   end
 
-
   # returns the next occurence after the given date
   def next(now = @time_source.now, num = 1)
     t = InternalTime.new(now, @time_source)
@@ -100,15 +99,15 @@ class CronParser
     nudge_minute(t)
     t = t.to_time
     if num > 1
-      recursive_calculate(:next,t,num)
+      recursive_calculate(:next, t, num)
     else
       t
     end
   end
 
   # returns the last occurence before the given date
-  def last(now = @time_source.now, num=1)
-    t = InternalTime.new(now,@time_source)
+  def last(now = @time_source.now, num = 1)
+    t = InternalTime.new(now, @time_source)
 
     unless time_specs[:month][0].include?(t.month)
       nudge_month(t, :last)
@@ -129,12 +128,11 @@ class CronParser
     nudge_minute(t, :last)
     t = t.to_time
     if num > 1
-      recursive_calculate(:last,t,num)
+      recursive_calculate(:last, t, num)
     else
       t
     end
   end
-
 
   SUBELEMENT_REGEX = %r{^(\d+)(-(\d+)(/(\d+))?)?$}
   def parse_element(elem, allowed_range)
@@ -160,10 +158,9 @@ class CronParser
     [Set.new(values), values, elem]
   end
 
-
   protected
 
-  def recursive_calculate(meth,time,num)
+  def recursive_calculate(meth, time, num)
     array = [time]
     num.-(1).times do |num|
       array << self.send(meth, array.last)
@@ -238,6 +235,7 @@ class CronParser
 
   def nudge_minute(t, dir = :next)
     spec = time_specs[:minute][1]
+    t.min = t.min + 1 unless dir == :next
     next_value = find_best_next(t.min, spec, dir)
     t.min = next_value || (dir == :next ? spec.first : spec.last)
 
@@ -249,11 +247,11 @@ class CronParser
       # tokens now contains the 5 fields
       tokens = substitute_parse_symbols(@source).split(/\s+/)
       {
-        :minute => parse_element(tokens[0], 0..59), #minute
-        :hour   => parse_element(tokens[1], 0..23), #hour
-        :dom    => parse_element(tokens[2], 1..31), #DOM
-        :month  => parse_element(tokens[3], 1..12), #mon
-        :dow    => parse_element(tokens[4], 0..6)  #DOW
+        :minute => parse_element(tokens[0], 0..59), # minute
+        :hour   => parse_element(tokens[1], 0..23), # hour
+        :dom    => parse_element(tokens[2], 1..31), # DOM
+        :month  => parse_element(tokens[3], 1..12), # mon
+        :dow    => parse_element(tokens[4], 0..6)  # DOW
       }
     end
   end
@@ -264,7 +262,6 @@ class CronParser
     end
   end
 
-
   def stepped_range(rng, step = 1)
     len = rng.last - rng.first
 
@@ -274,7 +271,6 @@ class CronParser
     result.pop if result[-1] == rng.last and rng.exclude_end?
     result
   end
-
 
   # returns the smallest element from allowed which is greater than current
   # returns nil if no matching value was found
