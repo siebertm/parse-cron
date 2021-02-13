@@ -15,12 +15,13 @@ class CronParser
       @day = time.day
       @hour = time.hour
       @min = time.min
+      @gmtoff = time.gmtoff
 
       @time_source = time_source
     end
 
     def to_time
-      time_source.local(@year, @month, @day, @hour, @min, 0)
+      time_source.new(@year, @month, @day, @hour, @min, 0, @gmtoff)
     end
 
     def inspect
