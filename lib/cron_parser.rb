@@ -141,13 +141,15 @@ class CronParser
     values = elem.split(',').map do |subel|
       if subel =~ /^\*/
         step = subel.length > 1 ? subel[2..-1].to_i : 1
+        raise ArgumentError, "Bad Vixie-style specification #{subel}" if step <= 0
         stepped_range(allowed_range, step)
       else
         if SUBELEMENT_REGEX === subel
           if $5 # with range
-            stepped_range($1.to_i..$3.to_i, $5.to_i)
+            raise ArgumentError, "Bad Vixie-style specification #{subel}" if $5.to_i <= 0
+            stepped_range(clamp_range($1.to_i..$3.to_i, allowed_range), $5.to_i)
           elsif $3 # range without step
-            stepped_range($1.to_i..$3.to_i, 1)
+            stepped_range(clamp_range($1.to_i..$3.to_i, allowed_range), 1)
           else # just a numeric
             [$1.to_i]
           end
@@ -264,6 +266,12 @@ class CronParser
     end
   end
 
+
+  def clamp_range(rng, allowed_range)
+    clamped_first = [[rng.first, allowed_range.first].max, allowed_range.last].min
+    clamped_last = [[rng.last, allowed_range.first].max, allowed_range.last].min
+    clamped_first..clamped_last
+  end
 
   def stepped_range(rng, step = 1)
     len = rng.last - rng.first
