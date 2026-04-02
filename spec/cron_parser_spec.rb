@@ -179,6 +179,36 @@ describe "CronParser#new" do
   end
 end
 
+describe "CronParser security" do
+  it "should clamp out-of-bounds ranges to allowed range" do
+    parser = CronParser.new('* * * * *')
+    result = parser.parse_element("0-999999999", 0..59).first.to_a.sort
+    result.should == (0..59).to_a
+  end
+
+  it "should clamp large ranges in full cron expressions" do
+    expect { CronParser.new("0-999999999 * * * *").next }.not_to raise_error
+  end
+
+  it "should raise ArgumentError for zero step in range" do
+    expect { CronParser.new("1-10/0 * * * *").next }.to raise_error(ArgumentError)
+  end
+
+  it "should raise ArgumentError for zero step with wildcard" do
+    expect { CronParser.new("*/0 * * * *").next }.to raise_error(ArgumentError)
+  end
+
+  it "should still parse valid ranges correctly" do
+    parser = CronParser.new('* * * * *')
+    parser.parse_element("10-20", 0..59).first.to_a.sort.should == (10..20).to_a
+  end
+
+  it "should still parse valid stepped ranges correctly" do
+    parser = CronParser.new('* * * * *')
+    parser.parse_element("10-20/3", 0..59).first.to_a.sort.should == [10, 13, 16, 19]
+  end
+end
+
 describe "time source" do
   it "should use an alternate specified time source" do
     ExtendedTime = Class.new(Time)
